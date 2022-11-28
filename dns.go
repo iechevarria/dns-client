@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"strings"
 	"syscall"
 )
@@ -201,22 +202,39 @@ func ReadName(r *bytes.Reader) (string, error) {
 	var err error
 	for {
 		length, err = r.ReadByte()
+		if err != nil {
+			return "", err
+		}
 
 		// Handle compressed name
 		// 0xc0 = 0b11000000
 		if length&0xc0 == 0xc0 {
+			// Get pointer
 			next, err = r.ReadByte()
 			if err != nil {
 				return "", err
 			}
 			pointer = uint16(length&0b00111111)<<8 | uint16(next)
-			fmt.Println(pointer)
-			return "", nil
+
+			// Save old reader position
+			pos, err := r.Seek(0, io.SeekCurrent)
+			if err != nil {
+				return "", err
+			}
+
+			// Seek to pointer and read name
+			r.Seek(int64(pointer), io.SeekStart)
+			name, err = ReadName(r)
+			if err != nil {
+				return "", err
+			}
+			name += "."
+
+			// Restore reader position
+			r.Seek(pos, io.SeekStart)
+			continue
 		}
 
-		if err != nil {
-			return "", err
-		}
 		if length == 0 {
 			// Removes last dot. This is hacky and should be done better :)
 			name = name[:len(name)-1]
@@ -325,7 +343,7 @@ func main() {
 		panic(err)
 	}
 
-	// Response header
+	// Read response header
 	responseBuf := bytes.NewReader(response[:n])
 	var responseHeader DnsHeader
 	binary.Read(responseBuf, binary.BigEndian, &responseHeader)
@@ -388,14 +406,14 @@ func main() {
 	}
 	fmt.Println(responseQuestion)
 
-	ReadName(responseBuf)
-
-	fmt.Println(responseBuf)
+	name, err := ReadName(responseBuf)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(name)
 
 	err = syscall.Close(sock)
 	if err != nil {
 		panic(err)
 	}
-
-	// fmt.Println(sock)
 }
