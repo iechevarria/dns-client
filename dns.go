@@ -228,11 +228,10 @@ func ReadName(r *bytes.Reader) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			name += "."
 
 			// Restore reader position
 			r.Seek(pos, io.SeekStart)
-			continue
+			return name, nil
 		}
 
 		if length == 0 {
@@ -265,6 +264,20 @@ func ReadQuestion(r *bytes.Reader) (DnsQuestion, error) {
 	binary.Read(r, binary.BigEndian, &q.QType)
 	binary.Read(r, binary.BigEndian, &q.QClass)
 	return q, nil
+}
+
+func ReadResourceRecord(r *bytes.Reader) (DnsResourceRecord, error) {
+	var res DnsResourceRecord
+	name, err := ReadName(r)
+	if err != nil {
+		return res, err
+	}
+	res.Name = name
+	binary.Read(r, binary.BigEndian, &res.Type)
+	binary.Read(r, binary.BigEndian, &res.Class)
+	binary.Read(r, binary.BigEndian, &res.TTL)
+	binary.Read(r, binary.BigEndian, &res.RDLength)
+	return res, nil
 }
 
 func SerializeQuestion(buf *bytes.Buffer, question DnsQuestion) error {
@@ -344,9 +357,9 @@ func main() {
 	}
 
 	// Read response header
-	responseBuf := bytes.NewReader(response[:n])
+	responseReader := bytes.NewReader(response[:n])
 	var responseHeader DnsHeader
-	binary.Read(responseBuf, binary.BigEndian, &responseHeader)
+	binary.Read(responseReader, binary.BigEndian, &responseHeader)
 	fmt.Println(responseHeader)
 
 	// Validate response header
@@ -391,7 +404,7 @@ func main() {
 	}
 
 	// Read and validate response question
-	responseQuestion, err := ReadQuestion(responseBuf)
+	responseQuestion, err := ReadQuestion(responseReader)
 	if err != nil {
 		panic(err)
 	}
@@ -406,11 +419,11 @@ func main() {
 	}
 	fmt.Println(responseQuestion)
 
-	name, err := ReadName(responseBuf)
+	responseResourceRecord, err := ReadResourceRecord(responseReader)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(name)
+	fmt.Println(responseResourceRecord)
 
 	err = syscall.Close(sock)
 	if err != nil {
