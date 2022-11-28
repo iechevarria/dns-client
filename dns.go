@@ -9,22 +9,22 @@ import (
 )
 
 /*
-A		1 a host address
-NS		2 an authoritative name server
-MD		3 a mail destination (Obsolete - use MX)
-MF		4 a mail forwarder (Obsolete - use MX)
-CNAME	5 the canonical name for an alias
-SOA		6 marks the start of a zone of authority
-MB		7 a mailbox domain name (EXPERIMENTAL)
-MG		8 a mail group member (EXPERIMENTAL)
-MR		9 a mail rename domain name (EXPERIMENTAL)
-NULL	10 a null RR (EXPERIMENTAL)
-WKS		11 a well known service description
-PTR		12 a domain name pointer
-HINFO	13 host information
-MINFO	14 mailbox or mail list information
-MX		15 mail exchange
-TXT		16 text strings
+	A		1 a host address
+	NS		2 an authoritative name server
+	MD		3 a mail destination (Obsolete - use MX)
+	MF		4 a mail forwarder (Obsolete - use MX)
+	CNAME	5 the canonical name for an alias
+	SOA		6 marks the start of a zone of authority
+	MB		7 a mailbox domain name (EXPERIMENTAL)
+	MG		8 a mail group member (EXPERIMENTAL)
+	MR		9 a mail rename domain name (EXPERIMENTAL)
+	NULL	10 a null RR (EXPERIMENTAL)
+	WKS		11 a well known service description
+	PTR		12 a domain name pointer
+	HINFO	13 host information
+	MINFO	14 mailbox or mail list information
+	MX		15 mail exchange
+	TXT		16 text strings
 */
 const (
 	A = iota + 1
@@ -46,10 +46,10 @@ const (
 )
 
 /*
-IN		1 the Internet
-CS		2 the CSNET class (Obsolete - used only for examples in some obsolete RFCs)
-CH		3 the CHAOS class
-HS		4 Hesiod [Dyer 87]
+	IN		1 the Internet
+	CS		2 the CSNET class (Obsolete - used only for examples in some obsolete RFCs)
+	CH		3 the CHAOS class
+	HS		4 Hesiod [Dyer 87]
 */
 const (
 	IN = iota + 1
@@ -59,11 +59,11 @@ const (
 )
 
 /*
-       	                        1  1  1  1  1  1
-  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+									1  1  1  1  1  1
+	  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
 type DnsFlags uint16
 
@@ -96,21 +96,21 @@ func (f DnsFlags) String() string {
 }
 
 /*
-      	                        1  1  1  1  1  1
-  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                      ID                       |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   | QR = 0, Opcode = 0, AA = 0, TC = 0, RD = 1, RA = 0, Z = 0, RCODE = 0
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                    QDCOUNT                    | number of entries in the question section = 1
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                    ANCOUNT                    | number of resource records in the answer section = 0
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                    NSCOUNT                    | number of name server resource records in the authority records section = 0
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                    ARCOUNT                    | number of resource records in the additional records section = 1
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+									1  1  1  1  1  1
+	0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                      ID                       |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   | QR = 0, Opcode = 0, AA = 0, TC = 0, RD = 1, RA = 0, Z = 0, RCODE = 0
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    QDCOUNT                    | number of entries in the question section = 1
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    ANCOUNT                    | number of resource records in the answer section = 0
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    NSCOUNT                    | number of name server resource records in the authority records section = 0
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                    ARCOUNT                    | number of resource records in the additional records section = 1
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
 type DnsHeader struct {
 	Id      uint16
@@ -122,68 +122,147 @@ type DnsHeader struct {
 }
 
 func (h DnsHeader) String() string {
-	return fmt.Sprintf("Id: %d, Flags: [%s], QdCount: %d, AnCount: %d, NsCount: %d, ArCount: %d", h.Id, h.Flags, h.QdCount, h.AnCount, h.NsCount, h.ArCount)
+	return fmt.Sprintf("Id: %d, Flags: %s, QdCount: %d, AnCount: %d, NsCount: %d, ArCount: %d", h.Id, h.Flags, h.QdCount, h.AnCount, h.NsCount, h.ArCount)
 }
 
 /*
-QNAME not included in this struct since it has variable length
-
-			     			    1  1  1  1  1  1
-  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                     QTYPE                     | 0x0001 = A
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                     QCLASS                    | 0x0001 = IN
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+									1  1  1  1  1  1
+	  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                                               |
+	/                     QNAME                     /
+	/                                               /
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                     QTYPE                     |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                     QCLASS                    |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
 type DnsQuestion struct {
+	QName  string
 	QType  uint16
 	QClass uint16
 }
 
-/*
-  							    1  1  1  1  1  1
-  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                      TYPE                     |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                     CLASS                     |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                      TTL                      |
-|                                               |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                   RDLENGTH                    |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
+func (q DnsQuestion) String() string {
+	return fmt.Sprintf("QName: %s, QType: %d, QClass: %d", q.QName, q.QType, q.QClass)
+}
 
-Name and RData not included in this struct since they have variable length
+/*
+									1  1  1  1  1  1
+	  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                                               |
+	/                                               /
+	/                      NAME                     /
+	|                                               |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                      TYPE                     |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                     CLASS                     |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                      TTL                      |
+	|                                               |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+	|                   RDLENGTH                    |
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
+	/                     RDATA                     /
+	/                                               /
+	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 */
 type DnsResourceRecord struct {
+	Name     string
 	Type     uint16
 	Class    uint16
-	TTL      uint32
+	TTL      int32
 	RDLength uint16
+	RData    []byte
 }
 
 func (r DnsResourceRecord) String() string {
-	return fmt.Sprintf("Type: %d, Class: %d, TTL: %d, RDLength: %d", r.Type, r.Class, r.TTL, r.RDLength)
+	return fmt.Sprintf("Name: %s, Type: %d, Class: %d, TTL: %d, RDLength: %d, RData: %v", r.Name, r.Type, r.Class, r.TTL, r.RDLength, r.RData)
 }
 
-func ReadName(buf *bytes.Buffer) (string, error) {
+func SerializeName(name string) []byte {
+	var buf bytes.Buffer
+	for _, label := range strings.Split(name, ".") {
+		buf.WriteByte(byte(len(label)))
+		buf.WriteString(label)
+	}
+	buf.WriteByte(0)
+	return buf.Bytes()
+}
+
+func ReadName(r *bytes.Reader) (string, error) {
 	var name string
 	var length uint8
+	var pointer uint16
+	var next byte
 	var err error
 	for {
-		length, err = buf.ReadByte()
+		length, err = r.ReadByte()
+
+		// Handle compressed name
+		// 0xc0 = 0b11000000
+		if length&0xc0 == 0xc0 {
+			next, err = r.ReadByte()
+			if err != nil {
+				return "", err
+			}
+			pointer = uint16(length&0b00111111)<<8 | uint16(next)
+			fmt.Println(pointer)
+			return "", nil
+		}
+
 		if err != nil {
 			return "", err
 		}
 		if length == 0 {
+			// Removes last dot. This is hacky and should be done better :)
+			name = name[:len(name)-1]
 			break
 		}
-		name += string(buf.Next(int(length)))
-		name += "."
+
+		// Reads label. Is there not a better way to do this?
+		label := make([]byte, length)
+		_, err = r.Read(label)
+		if err != nil {
+			return "", err
+		}
+		name += string(label) + "."
 	}
 	return name, nil
+}
+
+func ReadQuestion(r *bytes.Reader) (DnsQuestion, error) {
+	// Stupid hack to get around "non-name" thing if I try to set q.QName directly
+	var QName string
+	var q DnsQuestion
+	QName, err := ReadName(r)
+	q.QName = QName
+	if err != nil {
+		return q, err
+	}
+
+	binary.Read(r, binary.BigEndian, &q.QType)
+	binary.Read(r, binary.BigEndian, &q.QClass)
+	return q, nil
+}
+
+func SerializeQuestion(buf *bytes.Buffer, question DnsQuestion) error {
+	err := binary.Write(buf, binary.BigEndian, SerializeName(question.QName))
+	if err != nil {
+		return err
+	}
+	err = binary.Write(buf, binary.BigEndian, question.QType)
+	if err != nil {
+		return err
+	}
+	err = binary.Write(buf, binary.BigEndian, question.QClass)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -211,6 +290,7 @@ func main() {
 		ArCount: 0,
 	}
 	question := DnsQuestion{
+		QName:  url,
 		QType:  A,
 		QClass: IN,
 	}
@@ -219,9 +299,10 @@ func main() {
 
 	// Construct query
 	var query bytes.Buffer
+	// Write header
 	binary.Write(&query, binary.BigEndian, requestHeader)
-	binary.Write(&query, binary.BigEndian, qnameSlice)
-	binary.Write(&query, binary.BigEndian, question)
+	// Write question
+	err := SerializeQuestion(&query, question)
 
 	// Send query
 	sock, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
@@ -245,7 +326,7 @@ func main() {
 	}
 
 	// Response header
-	responseBuf := bytes.NewBuffer(response[:n])
+	responseBuf := bytes.NewReader(response[:n])
 	var responseHeader DnsHeader
 	binary.Read(responseBuf, binary.BigEndian, &responseHeader)
 	fmt.Println(responseHeader)
@@ -291,22 +372,23 @@ func main() {
 		panic("response rcode is not 0 (no error)")
 	}
 
-	name, err := ReadName(responseBuf)
+	// Read and validate response question
+	responseQuestion, err := ReadQuestion(responseBuf)
 	if err != nil {
-		panic("error reading name: " + err.Error())
+		panic(err)
 	}
-	fmt.Println(name)
+	if responseQuestion.QName != url {
+		panic(fmt.Sprintf("QName %s does not match url %s", responseQuestion.QName, url))
+	}
+	if responseQuestion.QType != question.QType {
+		panic(fmt.Sprintf("response qtype %d does not match request qtype %d", responseQuestion.QType, question.QType))
+	}
+	if responseQuestion.QClass != question.QClass {
+		panic(fmt.Sprintf("response qclass %d does not match request qclass %d", responseQuestion.QClass, question.QClass))
+	}
+	fmt.Println(responseQuestion)
 
-	var responseResourceRecord DnsResourceRecord
-	binary.Read(responseBuf, binary.BigEndian, &responseResourceRecord)
-	fmt.Println(responseResourceRecord)
-
-	if responseResourceRecord.Type != question.QType {
-		panic(fmt.Sprintf("response type %d does not match question type %d", responseResourceRecord.Type, question.QType))
-	}
-	if responseResourceRecord.Class != question.QClass {
-		panic(fmt.Sprintf("response class %d does not match question class %d", responseResourceRecord.Class, question.QClass))
-	}
+	ReadName(responseBuf)
 
 	fmt.Println(responseBuf)
 
