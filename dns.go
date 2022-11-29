@@ -9,24 +9,6 @@ import (
 	"syscall"
 )
 
-/*
-	A		1 a host address
-	NS		2 an authoritative name server
-	MD		3 a mail destination (Obsolete - use MX)
-	MF		4 a mail forwarder (Obsolete - use MX)
-	CNAME	5 the canonical name for an alias
-	SOA		6 marks the start of a zone of authority
-	MB		7 a mailbox domain name (EXPERIMENTAL)
-	MG		8 a mail group member (EXPERIMENTAL)
-	MR		9 a mail rename domain name (EXPERIMENTAL)
-	NULL	10 a null RR (EXPERIMENTAL)
-	WKS		11 a well known service description
-	PTR		12 a domain name pointer
-	HINFO	13 host information
-	MINFO	14 mailbox or mail list information
-	MX		15 mail exchange
-	TXT		16 text strings
-*/
 const (
 	A = iota + 1
 	NS
@@ -46,12 +28,6 @@ const (
 	TXT
 )
 
-/*
-	IN		1 the Internet
-	CS		2 the CSNET class (Obsolete - used only for examples in some obsolete RFCs)
-	CH		3 the CHAOS class
-	HS		4 Hesiod [Dyer 87]
-*/
 const (
 	IN = iota + 1
 	CS
@@ -122,7 +98,7 @@ func (r DnsRequest) String() string {
 	for _, q := range r.Questions {
 		qStr += fmt.Sprintf("\n  { %s }", q)
 	}
-	return fmt.Sprintf("Header: { %s }, Questions: { %s }", r.Header, qStr)
+	return fmt.Sprintf("Header: { %s }\nQuestions: [ %s\n]", r.Header, qStr)
 }
 
 type DnsResourceRecord struct {
@@ -136,13 +112,8 @@ type DnsResourceRecord struct {
 
 func (r DnsResourceRecord) String() string {
 	switch r.Type {
-	case CNAME:
-		reader := bytes.NewReader(r.RData)
-		cName, err := ReadName(reader)
-		if err != nil {
-			cName = "error"
-		}
-		return fmt.Sprintf("Name: %s, Type: %d, Class: %d, TTL: %d, RDLength: %d, RData: %s", r.Name, r.Type, r.Class, r.TTL, r.RDLength, cName)
+	case CNAME, NS:
+		return fmt.Sprintf("Name: %s, Type: %d, Class: %d, TTL: %d, RDLength: %d, RData: %s", r.Name, r.Type, r.Class, r.TTL, r.RDLength, string(r.RData))
 	default:
 		return fmt.Sprintf("Name: %s, Type: %d, Class: %d, TTL: %d, RDLength: %d, RData: %v", r.Name, r.Type, r.Class, r.TTL, r.RDLength, r.RData)
 	}
@@ -169,6 +140,7 @@ func (r DnsResponse) String() string {
 func ReadName(r *bytes.Reader) (string, error) {
 	// Should I be declaring stuff here?
 	var name string
+	var compressedName string
 	var length uint8
 	var pointer uint16
 	var nextByte byte
@@ -200,10 +172,11 @@ func ReadName(r *bytes.Reader) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			name, err = ReadName(r)
+			compressedName, err = ReadName(r)
 			if err != nil {
 				return "", err
 			}
+			name += compressedName
 
 			// Restore reader position
 			_, err = r.Seek(pos, io.SeekStart)
@@ -256,11 +229,22 @@ func ReadResourceRecord(r *bytes.Reader) (DnsResourceRecord, error) {
 	binary.Read(r, binary.BigEndian, &res.Class)
 	binary.Read(r, binary.BigEndian, &res.TTL)
 	binary.Read(r, binary.BigEndian, &res.RDLength)
-	res.RData = make([]byte, res.RDLength)
-	_, err = r.Read(res.RData)
-	if err != nil {
-		return res, err
+
+	switch res.Type {
+	case CNAME, NS:
+		name, err := ReadName(r)
+		if err != nil {
+			return res, err
+		}
+		res.RData = []byte(name)
+	default:
+		res.RData = make([]byte, res.RDLength)
+		_, err = r.Read(res.RData)
+		if err != nil {
+			return res, err
+		}
 	}
+
 	return res, nil
 }
 
@@ -280,63 +264,7 @@ func SerializeQuestion(buf *bytes.Buffer, question DnsQuestion) {
 	binary.Write(buf, binary.BigEndian, question.QClass)
 }
 
-func main() {
-	// var url = "docs.google.com"
-	var urls = []string{"init.push.apple.com"}
-
-	var request DnsRequest
-	request.Header = DnsHeader{
-		Id:      12345,
-		Flags:   0x0100,
-		QdCount: 1,
-		AnCount: 0,
-		NsCount: 0,
-		ArCount: 0,
-	}
-	for _, url := range urls {
-		request.Questions = append(request.Questions, DnsQuestion{
-			QName:  url,
-			QType:  1,
-			QClass: 1,
-		})
-	}
-
-	// Serialize query
-	var reqBuf bytes.Buffer
-	// Write header
-	binary.Write(&reqBuf, binary.BigEndian, request.Header)
-	// Write questions
-	for _, q := range request.Questions {
-		SerializeQuestion(&reqBuf, q)
-	}
-
-	// Send reqBuf
-	sock, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
-	if err != nil {
-		panic(err)
-	}
-	err = syscall.Bind(sock, &syscall.SockaddrInet4{Port: 53})
-	if err != nil {
-		panic(err)
-	}
-	err = syscall.Sendto(sock, reqBuf.Bytes(), 0, &syscall.SockaddrInet4{Port: 53, Addr: [4]byte{8, 8, 8, 8}})
-	if err != nil {
-		panic(err)
-	}
-
-	// Recv response
-	buf := make([]byte, 512)
-	n, _, err := syscall.Recvfrom(sock, buf, 0)
-	if err != nil {
-		panic(err)
-	}
-
-	// Read response header
-	responseReader := bytes.NewReader(buf[:n])
-	var response DnsResponse
-	binary.Read(responseReader, binary.BigEndian, &response.Header)
-
-	// Validate response header
+func ValidateResponseHeader(response DnsResponse, request DnsRequest) {
 	if response.Header.Id != request.Header.Id {
 		panic(fmt.Sprintf("response id %d does not match request id %d", response.Header.Id, request.Header.Id))
 	}
@@ -376,6 +304,63 @@ func main() {
 	if response.Header.Flags.RCode() != 0 {
 		panic("response rcode is not 0 (no error)")
 	}
+}
+
+func main() {
+	var urls = []string{"github.com"}
+
+	var request DnsRequest
+	request.Header = DnsHeader{
+		Id:      12345,
+		Flags:   0x0100,
+		QdCount: uint16(len(urls)),
+		AnCount: 0,
+		NsCount: 0,
+		ArCount: 0,
+	}
+	for _, u := range urls {
+		request.Questions = append(request.Questions, DnsQuestion{
+			QName:  u,
+			QType:  NS,
+			QClass: IN,
+		})
+	}
+
+	fmt.Printf("---- Request ----\n%v\n\n", request)
+
+	// Serialize query: write header and questions
+	var reqBuf bytes.Buffer
+	binary.Write(&reqBuf, binary.BigEndian, request.Header)
+	for _, q := range request.Questions {
+		SerializeQuestion(&reqBuf, q)
+	}
+
+	// Send reqBuf
+	sock, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
+	if err != nil {
+		panic(err)
+	}
+	err = syscall.Bind(sock, &syscall.SockaddrInet4{Port: 53})
+	if err != nil {
+		panic(err)
+	}
+	err = syscall.Sendto(sock, reqBuf.Bytes(), 0, &syscall.SockaddrInet4{Port: 53, Addr: [4]byte{8, 8, 8, 8}})
+	if err != nil {
+		panic(err)
+	}
+
+	// Recv response
+	resBuf := make([]byte, 512)
+	n, _, err := syscall.Recvfrom(sock, resBuf, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	// Read response header
+	responseReader := bytes.NewReader(resBuf[:n])
+	var response DnsResponse
+	binary.Read(responseReader, binary.BigEndian, &response.Header)
+	ValidateResponseHeader(response, request)
 
 	// Read response questions
 	for i := 0; i < int(response.Header.QdCount); i++ {
@@ -395,7 +380,7 @@ func main() {
 		response.Answers = append(response.Answers, answer)
 	}
 
-	fmt.Println(response)
+	fmt.Printf("---- Response ----\n%v\n", response)
 
 	err = syscall.Close(sock)
 	if err != nil {
