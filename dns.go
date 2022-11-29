@@ -59,13 +59,6 @@ const (
 	HS
 )
 
-/*
-									1  1  1  1  1  1
-	  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-*/
 type DnsFlags uint16
 
 func (f DnsFlags) QR() uint16 {
@@ -96,23 +89,6 @@ func (f DnsFlags) String() string {
 	return fmt.Sprintf("QR: %d, OpCode: %d, AA: %d, TC: %d, RD: %d, RA: %d, Z: %d, RCode: %d", f.QR(), f.OpCode(), f.AA(), f.TC(), f.RD(), f.RA(), f.Z(), f.RCode())
 }
 
-/*
-									1  1  1  1  1  1
-	0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                      ID                       |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   | QR = 0, Opcode = 0, AA = 0, TC = 0, RD = 1, RA = 0, Z = 0, RCODE = 0
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                    QDCOUNT                    | number of entries in the question section = 1
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                    ANCOUNT                    | number of resource records in the answer section = 0
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                    NSCOUNT                    | number of name server resource records in the authority records section = 0
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                    ARCOUNT                    | number of resource records in the additional records section = 1
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-*/
 type DnsHeader struct {
 	Id      uint16
 	Flags   DnsFlags
@@ -123,22 +99,9 @@ type DnsHeader struct {
 }
 
 func (h DnsHeader) String() string {
-	return fmt.Sprintf("Id: %d, Flags: %s, QdCount: %d, AnCount: %d, NsCount: %d, ArCount: %d", h.Id, h.Flags, h.QdCount, h.AnCount, h.NsCount, h.ArCount)
+	return fmt.Sprintf("Id: %d, Flags: { %s }, QdCount: %d, AnCount: %d, NsCount: %d, ArCount: %d", h.Id, h.Flags, h.QdCount, h.AnCount, h.NsCount, h.ArCount)
 }
 
-/*
-									1  1  1  1  1  1
-	  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                                               |
-	/                     QNAME                     /
-	/                                               /
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                     QTYPE                     |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                     QCLASS                    |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-*/
 type DnsQuestion struct {
 	QName  string
 	QType  uint16
@@ -149,28 +112,19 @@ func (q DnsQuestion) String() string {
 	return fmt.Sprintf("QName: %s, QType: %d, QClass: %d", q.QName, q.QType, q.QClass)
 }
 
-/*
-									1  1  1  1  1  1
-	  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                                               |
-	/                                               /
-	/                      NAME                     /
-	|                                               |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                      TYPE                     |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                     CLASS                     |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                      TTL                      |
-	|                                               |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|                   RDLENGTH                    |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
-	/                     RDATA                     /
-	/                                               /
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-*/
+type DnsRequest struct {
+	Header    DnsHeader
+	Questions []DnsQuestion
+}
+
+func (r DnsRequest) String() string {
+	var qStr string
+	for _, q := range r.Questions {
+		qStr += fmt.Sprintf("\n  { %s }", q)
+	}
+	return fmt.Sprintf("Header: { %s }, Questions: { %s }", r.Header, qStr)
+}
+
 type DnsResourceRecord struct {
 	Name     string
 	Type     uint16
@@ -181,24 +135,43 @@ type DnsResourceRecord struct {
 }
 
 func (r DnsResourceRecord) String() string {
-	return fmt.Sprintf("Name: %s, Type: %d, Class: %d, TTL: %d, RDLength: %d, RData: %v", r.Name, r.Type, r.Class, r.TTL, r.RDLength, r.RData)
+	switch r.Type {
+	case CNAME:
+		reader := bytes.NewReader(r.RData)
+		cName, err := ReadName(reader)
+		if err != nil {
+			cName = "error"
+		}
+		return fmt.Sprintf("Name: %s, Type: %d, Class: %d, TTL: %d, RDLength: %d, RData: %s", r.Name, r.Type, r.Class, r.TTL, r.RDLength, cName)
+	default:
+		return fmt.Sprintf("Name: %s, Type: %d, Class: %d, TTL: %d, RDLength: %d, RData: %v", r.Name, r.Type, r.Class, r.TTL, r.RDLength, r.RData)
+	}
 }
 
-func SerializeName(name string) []byte {
-	var buf bytes.Buffer
-	for _, label := range strings.Split(name, ".") {
-		buf.WriteByte(byte(len(label)))
-		buf.WriteString(label)
+type DnsResponse struct {
+	Header    DnsHeader
+	Questions []DnsQuestion
+	Answers   []DnsResourceRecord
+}
+
+func (r DnsResponse) String() string {
+	var qStr string
+	var aStr string
+	for _, q := range r.Questions {
+		qStr += fmt.Sprintf("\n  { %s }", q)
 	}
-	buf.WriteByte(0)
-	return buf.Bytes()
+	for _, a := range r.Answers {
+		aStr += fmt.Sprintf("\n  { %s }", a)
+	}
+	return fmt.Sprintf("Header: { %s }\nQuestions: [%s\n]\nAnswers: [%s\n]", r.Header, qStr, aStr)
 }
 
 func ReadName(r *bytes.Reader) (string, error) {
+	// Should I be declaring stuff here?
 	var name string
 	var length uint8
 	var pointer uint16
-	var next byte
+	var nextByte byte
 	var err error
 	for {
 		length, err = r.ReadByte()
@@ -210,11 +183,11 @@ func ReadName(r *bytes.Reader) (string, error) {
 		// 0xc0 = 0b11000000
 		if length&0xc0 == 0xc0 {
 			// Get pointer
-			next, err = r.ReadByte()
+			nextByte, err = r.ReadByte()
 			if err != nil {
 				return "", err
 			}
-			pointer = uint16(length&0b00111111)<<8 | uint16(next)
+			pointer = uint16(length&0b00111111)<<8 | uint16(nextByte)
 
 			// Save old reader position
 			pos, err := r.Seek(0, io.SeekCurrent)
@@ -223,14 +196,20 @@ func ReadName(r *bytes.Reader) (string, error) {
 			}
 
 			// Seek to pointer and read name
-			r.Seek(int64(pointer), io.SeekStart)
+			_, err = r.Seek(int64(pointer), io.SeekStart)
+			if err != nil {
+				return "", err
+			}
 			name, err = ReadName(r)
 			if err != nil {
 				return "", err
 			}
 
 			// Restore reader position
-			r.Seek(pos, io.SeekStart)
+			_, err = r.Seek(pos, io.SeekStart)
+			if err != nil {
+				return "", err
+			}
 			return name, nil
 		}
 
@@ -256,10 +235,10 @@ func ReadQuestion(r *bytes.Reader) (DnsQuestion, error) {
 	var QName string
 	var q DnsQuestion
 	QName, err := ReadName(r)
-	q.QName = QName
 	if err != nil {
 		return q, err
 	}
+	q.QName = QName
 
 	binary.Read(r, binary.BigEndian, &q.QType)
 	binary.Read(r, binary.BigEndian, &q.QClass)
@@ -277,42 +256,36 @@ func ReadResourceRecord(r *bytes.Reader) (DnsResourceRecord, error) {
 	binary.Read(r, binary.BigEndian, &res.Class)
 	binary.Read(r, binary.BigEndian, &res.TTL)
 	binary.Read(r, binary.BigEndian, &res.RDLength)
+	res.RData = make([]byte, res.RDLength)
+	_, err = r.Read(res.RData)
+	if err != nil {
+		return res, err
+	}
 	return res, nil
 }
 
-func SerializeQuestion(buf *bytes.Buffer, question DnsQuestion) error {
-	err := binary.Write(buf, binary.BigEndian, SerializeName(question.QName))
-	if err != nil {
-		return err
+func SerializeName(name string) []byte {
+	var buf bytes.Buffer
+	for _, label := range strings.Split(name, ".") {
+		buf.WriteByte(byte(len(label)))
+		buf.WriteString(label)
 	}
-	err = binary.Write(buf, binary.BigEndian, question.QType)
-	if err != nil {
-		return err
-	}
-	err = binary.Write(buf, binary.BigEndian, question.QClass)
-	if err != nil {
-		return err
-	}
-	return nil
+	buf.WriteByte(0)
+	return buf.Bytes()
+}
+
+func SerializeQuestion(buf *bytes.Buffer, question DnsQuestion) {
+	binary.Write(buf, binary.BigEndian, SerializeName(question.QName))
+	binary.Write(buf, binary.BigEndian, question.QType)
+	binary.Write(buf, binary.BigEndian, question.QClass)
 }
 
 func main() {
-	//    4    d    o    c    s    6    g    o    o    g   l     e    3    c   o    m   end
-	// 0x04 0x64 0x6f 0x63 0x73 0x06 0x67 0x6f 0x6f 0x67 0x6c 0x65 0x03 0x63 0x6f 0x6d 0x00
-	// request_qname := [...]byte{0x04, 0x64, 0x6f, 0x63, 0x73, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00}
+	// var url = "docs.google.com"
+	var urls = []string{"init.push.apple.com"}
 
-	var url = "docs.google.com"
-
-	// Construct qname
-	var qnameSlice []byte
-	for _, a := range strings.Split(url, ".") {
-		qnameSlice = append(qnameSlice, byte(len(a)))
-		qnameSlice = append(qnameSlice, []byte(a)...)
-	}
-	qnameSlice = append(qnameSlice, 0)
-
-	// Construct header
-	requestHeader := DnsHeader{
+	var request DnsRequest
+	request.Header = DnsHeader{
 		Id:      12345,
 		Flags:   0x0100,
 		QdCount: 1,
@@ -320,22 +293,24 @@ func main() {
 		NsCount: 0,
 		ArCount: 0,
 	}
-	question := DnsQuestion{
-		QName:  url,
-		QType:  A,
-		QClass: IN,
+	for _, url := range urls {
+		request.Questions = append(request.Questions, DnsQuestion{
+			QName:  url,
+			QType:  1,
+			QClass: 1,
+		})
 	}
 
-	fmt.Println(requestHeader)
-
-	// Construct query
-	var query bytes.Buffer
+	// Serialize query
+	var reqBuf bytes.Buffer
 	// Write header
-	binary.Write(&query, binary.BigEndian, requestHeader)
-	// Write question
-	err := SerializeQuestion(&query, question)
+	binary.Write(&reqBuf, binary.BigEndian, request.Header)
+	// Write questions
+	for _, q := range request.Questions {
+		SerializeQuestion(&reqBuf, q)
+	}
 
-	// Send query
+	// Send reqBuf
 	sock, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
 	if err != nil {
 		panic(err)
@@ -344,86 +319,83 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = syscall.Sendto(sock, query.Bytes(), 0, &syscall.SockaddrInet4{Port: 53, Addr: [4]byte{8, 8, 8, 8}})
+	err = syscall.Sendto(sock, reqBuf.Bytes(), 0, &syscall.SockaddrInet4{Port: 53, Addr: [4]byte{8, 8, 8, 8}})
 	if err != nil {
 		panic(err)
 	}
 
 	// Recv response
-	var response [512]byte
-	n, _, err := syscall.Recvfrom(sock, response[:], 0)
+	buf := make([]byte, 512)
+	n, _, err := syscall.Recvfrom(sock, buf, 0)
 	if err != nil {
 		panic(err)
 	}
 
 	// Read response header
-	responseReader := bytes.NewReader(response[:n])
-	var responseHeader DnsHeader
-	binary.Read(responseReader, binary.BigEndian, &responseHeader)
-	fmt.Println(responseHeader)
+	responseReader := bytes.NewReader(buf[:n])
+	var response DnsResponse
+	binary.Read(responseReader, binary.BigEndian, &response.Header)
 
 	// Validate response header
-	if responseHeader.Id != requestHeader.Id {
-		panic(fmt.Sprintf("response id %d does not match request id %d", responseHeader.Id, requestHeader.Id))
+	if response.Header.Id != request.Header.Id {
+		panic(fmt.Sprintf("response id %d does not match request id %d", response.Header.Id, request.Header.Id))
 	}
-	if responseHeader.QdCount != requestHeader.QdCount {
-		panic(fmt.Sprintf("response qdcount %d does not match request qdcount %d", responseHeader.QdCount, requestHeader.QdCount))
+	if response.Header.QdCount != request.Header.QdCount {
+		panic(fmt.Sprintf("response qdcount %d does not match request qdcount %d", response.Header.QdCount, request.Header.QdCount))
 	}
-	if responseHeader.AnCount == 0 {
+	if response.Header.AnCount == 0 {
 		panic("response ancount is 0")
 	}
-	if responseHeader.NsCount != requestHeader.NsCount {
-		panic(fmt.Sprintf("response nscount %d does not match request nscount %d", responseHeader.NsCount, requestHeader.NsCount))
+	if response.Header.NsCount != request.Header.NsCount {
+		panic(fmt.Sprintf("response nscount %d does not match request nscount %d", response.Header.NsCount, request.Header.NsCount))
 	}
-	if responseHeader.ArCount != requestHeader.ArCount {
-		panic(fmt.Sprintf("response arcount %d does not match request arcount %d", responseHeader.ArCount, requestHeader.ArCount))
+	if response.Header.ArCount != request.Header.ArCount {
+		panic(fmt.Sprintf("response arcount %d does not match request arcount %d", response.Header.ArCount, request.Header.ArCount))
 	}
-	if responseHeader.Flags.QR() != 1 {
+	if response.Header.Flags.QR() != 1 {
 		panic("response qr is not 1 (response)")
 	}
-	if responseHeader.Flags.OpCode() != 0 {
+	if response.Header.Flags.OpCode() != 0 {
 		panic("response opcode is not 0 (standard query)")
 	}
-	if responseHeader.Flags.AA() != 0 {
+	if response.Header.Flags.AA() != 0 {
 		panic("response aa is not 0 (not authoritative)")
 	}
-	if responseHeader.Flags.TC() != 0 {
+	if response.Header.Flags.TC() != 0 {
 		panic("response tc is not 0 (not truncated)")
 	}
-	if responseHeader.Flags.RD() != requestHeader.Flags.RD() {
-		panic(fmt.Sprintf("response rd %d does not match request rd %d (recursion desired)", responseHeader.Flags.RD(), requestHeader.Flags.RD()))
+	if response.Header.Flags.RD() != request.Header.Flags.RD() {
+		panic(fmt.Sprintf("response rd %d does not match request rd %d (recursion desired)", response.Header.Flags.RD(), request.Header.Flags.RD()))
 	}
-	if responseHeader.Flags.RA() != 1 {
+	if response.Header.Flags.RA() != 1 {
 		panic("response ra is not 1 (recursion available)")
 	}
-	if responseHeader.Flags.Z() != 0 {
+	if response.Header.Flags.Z() != 0 {
 		panic("response z is not 0")
 	}
-	if responseHeader.Flags.RCode() != 0 {
+	if response.Header.Flags.RCode() != 0 {
 		panic("response rcode is not 0 (no error)")
 	}
 
-	// Read and validate response question
-	responseQuestion, err := ReadQuestion(responseReader)
-	if err != nil {
-		panic(err)
+	// Read response questions
+	for i := 0; i < int(response.Header.QdCount); i++ {
+		question, err := ReadQuestion(responseReader)
+		if err != nil {
+			panic(err)
+		}
+		response.Questions = append(response.Questions, question)
 	}
-	if responseQuestion.QName != url {
-		panic(fmt.Sprintf("QName %s does not match url %s", responseQuestion.QName, url))
-	}
-	if responseQuestion.QType != question.QType {
-		panic(fmt.Sprintf("response qtype %d does not match request qtype %d", responseQuestion.QType, question.QType))
-	}
-	if responseQuestion.QClass != question.QClass {
-		panic(fmt.Sprintf("response qclass %d does not match request qclass %d", responseQuestion.QClass, question.QClass))
-	}
-	fmt.Println(responseQuestion)
 
-	responseResourceRecord, err := ReadResourceRecord(responseReader)
-	if err != nil {
-		panic(err)
+	// Read response answers
+	for i := 0; i < int(response.Header.AnCount); i++ {
+		answer, err := ReadResourceRecord(responseReader)
+		if err != nil {
+			panic(err)
+		}
+		response.Answers = append(response.Answers, answer)
 	}
-	fmt.Println(responseResourceRecord)
+
+	fmt.Println(response)
 
 	err = syscall.Close(sock)
 	if err != nil {
